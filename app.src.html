@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CampusConnect · VESIT</title>
+<link rel="icon" href="__LOGO_IMG__">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+/* Theme tokens: light by default, dark when <html class="dark"> */
+:root{--bg:#F2F4F7;--card:#FFFFFF;--bd:#E4E7EC;--tx:#111827;--tx2:#667085;--hv:#F2F4F7;--ac:#2563EB;color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root.dark{--ac:#3B82F6;--bg:#0A0E13;--card:#121821;--bd:#222C38;--tx:#E7EAEE;--tx2:#8A95A3;--hv:#1A222D;color-scheme:dark}
+body{background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px}
+.t2{color:var(--tx2)} .bdr{border:1px solid var(--bd)} .hv:hover{background:var(--hv)} .bgh{background:var(--hv)}
+.inp{background:var(--hv);border:1px solid var(--bd);color:var(--tx);outline:none}
+.inp:focus{border-color:var(--ac)}
+.ac{background:var(--ac);color:#fff} .acx{color:var(--ac)}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ============ SAMPLE DATA (replace with Supabase later) ============ */
+const BRANCHES = [
+  { id:"COMP",  short:"Computer",    name:"Computer Engineering",                      blurb:"Focuses on software systems, programming, and computer architecture." },
+  { id:"IT",    short:"IT",          name:"Information Technology",                    blurb:"Focuses on software, databases, networks and building IT systems." },
+  { id:"AIDS",  short:"AI & DS",     name:"Artificial Intelligence and Data Science",  blurb:"Focuses on machine learning, data analysis and intelligent systems." },
+  { id:"EXTC",  short:"EXTC",        name:"Electronics and Telecommunication Engineering", blurb:"Focuses on communication systems, signals and electronic circuits." },
+  { id:"ELEX",  short:"Electronics", name:"Electronics Engineering",                   blurb:"Focuses on electronic devices, circuits, embedded and VLSI design." },
+  { id:"ECS",   short:"ECS",         name:"Electronics and Computer Science",          blurb:"Blends electronics hardware with computer science and programming." },
+  { id:"AR",    short:"A & R",       name:"Automation and Robotics",                   blurb:"Focuses on control systems, sensors, automation and building robots." }
+];
+const BR = Object.fromEntries(BRANCHES.map(b=>[b.id,b]));
+const bShort = id => BR[id] ? BR[id].short : id;
+const TAGS = { DSA:"#3B82F6", Academics:"#10B981", Placements:"#A855F7", Projects:"#06B6D4" };
+const POSTS = [
+  { id:1, age:2, time:"2h ago", tag:"DSA", votes:24, comments:12,
+    title:"Best approach to solve the Longest Increasing Subsequence problem?",
+    body:"Stuck on this for the DSA assignment. Can someone explain the optimal approach or share a good resource?",
+    img:{ e:"🧩", t:"Problem screenshot", g:["#6366F1","#0EA5E9"] },
+    summary:[["Problem","LIS: dynamic programming vs binary search."],["Key insight","O(n log n) patience sorting is optimal."],["Resources","Striver's A2Z, LeetCode 300, Abdul Bari (YouTube)."]] },
+  { id:2, age:4, time:"4h ago", tag:"Academics", votes:15, comments:8,
+    title:"How should I prepare for placements in 3rd year? (EXTC)",
+    body:"Which core electronics topics matter along with DSA? Any good companies that visit VESIT for EXTC?",
+    img:null,
+    summary:[["Plan","Start DSA basics now, add 2 core subjects for interviews."],["Timeline","Finish the basics before 6th semester."]] },
+  { id:3, age:6, time:"6h ago", tag:"Placements", votes:34, comments:21,
+    title:"Is this internship offer legit? They want a registration fee",
+    body:"A company is asking for a fee before the internship starts. Seems off to me.",
+    img:{ e:"📄", t:"Offer letter (details hidden)", g:["#EC4899","#8B5CF6"] },
+    summary:[["Verdict","Seniors say a fee for an internship is a red flag."],["Check","Look the company up on LinkedIn and ask alumni."]] },
+  { id:4, age:9, time:"9h ago", tag:"Projects", votes:11, comments:5,
+    title:"Looking for 2 teammates for VESIT Hack (need an embedded + a web dev)",
+    body:"We have a Python + VLSI person already. Comment with your branch and year.",
+    img:null,
+    summary:[["Looking for","One embedded developer and one web developer."],["How to join","Comment with branch and year."]] }
+];
+/* Sample replies keyed by post id (replace with Supabase later) */
+const SEED = {
+  1:[{who:"Rohan · 4th Year COMP",senior:true,time:"1h ago",text:"Use the binary search method: keep a tails array and place each number with bisect_left. It runs in O(n log n). Do the DP version first to understand it."},
+     {who:"Sneha · 3rd Year IT",senior:true,time:"1h ago",text:"LeetCode 300 has both solutions in the discussion tab. Striver's video explains the DP part clearly."}],
+  2:[{who:"Aditya · 4th Year EXTC",senior:true,time:"3h ago",text:"Prepare analog, digital electronics and signals, plus DSA basics. Core companies come in 7th semester, so start now."}],
+  3:[{who:"Meera · 4th Year COMP",senior:true,time:"5h ago",text:"Never pay for an internship. Check the company on LinkedIn and ask the placement cell first."}],
+  4:[{who:"Karan · 3rd Year ECS",senior:true,time:"8h ago",text:"I have done embedded and VLSI projects in ECS. Reply with your branch and year and I will get in touch."}]
+};
+POSTS.forEach(p=>{ p.comments = (SEED[p.id]||[]).length; });   // keep the count equal to the replies shown
+const HACKATHONS = [
+  { id:1, name:"VESIT Hack 2026",        host:"CSI-VESIT",             date:"18 Oct", time:"9:00 AM",  venue:"Main Auditorium", team:"Teams of 2–4", prize:"₹50,000 prize pool",       note:"Registrations close 14 Oct", isNew:true,  e:"💻", g:["#6366F1","#8B5CF6"] },
+  { id:2, name:"EXTC Innovation Sprint", host:"IETE Student Forum",    date:"2 Nov",  time:"10:00 AM", venue:"EXTC Lab 3",      team:"Solo or duo",  prize:"Certificates + goodies",   note:"Registrations close 28 Oct", isNew:true,  e:"📡", g:["#0EA5E9","#14B8A6"] },
+  { id:3, name:"Code & Circuits 24h",    host:"Embedded Systems Club", date:"21 Nov", time:"6:00 PM",  venue:"Innovation Cell", team:"Teams of 3",   prize:"₹25,000 prize pool",       note:"Registrations close 15 Nov", isNew:false, e:"🔌", g:["#EC4899","#8B5CF6"] }
+];
+const RESOURCES = [
+  { id:1, name:"DSA in C++ (Book)",           desc:"Great for beginners. Clean notes inside.", type:"For Lending",  year:"2nd Year", branch:"COMP", e:"📘", g:["#1D4E89","#0B1F44"] },
+  { id:2, name:"Engineering Mathematics",     desc:"Good condition, minimal markings.",       type:"For Donation", year:"1st Year", branch:"All Branches", e:"📐", g:["#10B981","#0F766E"] },
+  { id:3, name:"Casio Scientific Calculator", desc:"Used for 1 semester. Works perfectly.",   type:"For Sale",     year:"1st Year", branch:"All Branches", e:"🧮", g:["#14B8A6","#0EA5E9"], price:"₹450" },
+  { id:4, name:"Signals & Systems (Notes)",   desc:"Handwritten notes + important questions.",type:"For Lending",  year:"3rd Year", branch:"EXTC", e:"📝", g:["#8B5CF6","#6366F1"] },
+  { id:5, name:"DBMS Notes (Handwritten)",    desc:"SQL, normalization and past paper answers.",type:"For Lending", year:"2nd Year", branch:"IT",   e:"🗄️", g:["#0EA5E9","#2563EB"] },
+  { id:6, name:"Machine Learning Notes",      desc:"Clean summary of core algorithms.",       type:"For Donation", year:"3rd Year", branch:"AIDS", e:"🤖", g:["#EC4899","#8B5CF6"] },
+  { id:7, name:"Electronics Fundamentals",    desc:"Good for basics and revision.",           type:"For Donation", year:"1st Year", branch:"ELEX", e:"🔋", g:["#0EA5E9","#2563EB"] },
+  { id:8, name:"Embedded C Handbook",         desc:"Useful for microcontroller labs.",        type:"For Lending",  year:"2nd Year", branch:"ECS",  e:"🔌", g:["#6366F1","#8B5CF6"] },
+  { id:9, name:"TI-36X Pro Calculator",       desc:"Almost new. Box included.",               type:"For Sale",     year:"2nd Year", branch:"All Branches", e:"🧮", g:["#64748B","#334155"], price:"₹1,800" },
+  { id:10, name:"Arduino Starter Kit",         desc:"Sensors and motors included.",            type:"For Sale",     year:"2nd Year", branch:"AR",   e:"🦾", g:["#0EA5E9","#14B8A6"], price:"₹900" }
+];
+const SKILLS = ["C / C++","Python","Embedded Systems","VLSI","Communication","Problem Solving","Teamwork","Content Writing"];
+const TYPE_COLOR = { "For Lending":"#10B981", "For Donation":"#3B82F6", "For Sale":"#8B5CF6" };
+const COLLEGE_DOMAIN = "ves.ac.in";
+const EMAIL_RE = new RegExp("^[^\\s@]+@"+COLLEGE_DOMAIN.replace(/\./g,"\\.")+"$","i");   // exactly one @, ends with the college domain
+const LOGO = "__LOGO_IMG__";
+const niceName = email => {   // "2026.abhinav.gurav@ves.ac.in" -> "Abhinav Gurav"
+  const parts = email.split("@")[0].split(/[._-]+/).filter(x=>x && !/^\d+$/.test(x));
+  return parts.length ? parts.map(x=>x[0].toUpperCase()+x.slice(1)).join(" ") : "there";
+};
+
+/* ============ GEMINI AI ============
+   Paste your key from https://aistudio.google.com/apikey to get live answers.
+   Leave it empty and the app shows demo answers instead.
+   WARNING: a key typed here is visible to anyone who opens the page. For the real
+   launch, move this call to your backend (e.g. a Supabase Edge Function) and keep the key there. */
+const GEMINI_API_KEY = "";
+const GEMINI_MODEL   = "gemini-2.5-flash";   // change if Google renames or retires it
+const GEMINI_RULES   = "You are a helpful senior at VESIT, a B.Tech engineering college in Mumbai, answering a junior's question on a campus Q&A forum. Be clear and practical. Use short plain-text lines, no markdown symbols, under 120 words. If you are unsure, say so.";
+async function askGemini(title,body){
+  if(!GEMINI_API_KEY){ await new Promise(r=>setTimeout(r,900)); return null; }   // null = demo mode
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_API_KEY},
+    body:JSON.stringify({
+      systemInstruction:{parts:[{text:GEMINI_RULES}]},
+      contents:[{role:"user",parts:[{text:`Question: ${title}\n${body||""}`}]}]
+    })
+  });
+  if(!res.ok) throw new Error("Gemini error "+res.status);
+  const d = await res.json();
+  return (d.candidates?.[0]?.content?.parts||[]).map(x=>x.text).join("").trim();
+}
+
+/* ============ THEME (light / dark, remembers choice) ============ */
+function useTheme(){
+  const [dark,setDark] = useState(()=>{
+    try{ const t=localStorage.getItem("cc-theme"); if(t) return t==="dark"; }catch(e){}
+    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+  useEffect(()=>{
+    document.documentElement.classList.toggle("dark",dark);
+    try{ localStorage.setItem("cc-theme",dark?"dark":"light"); }catch(e){}
+  },[dark]);
+  return [dark,setDark];
+}
+
+/* ============ SMALL PIECES ============ */
+const Tip = ({label,below,children}) => (
+  <div className="relative group">{children}
+    <span className={`pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 opacity-0 group-hover:opacity-100 transition z-30 ${below?"top-full mt-2":"-top-10"}`}>{label}</span>
+  </div>);
+
+/* Image space: shows a real picture if given, otherwise a tidy gradient placeholder */
+const ImgSpace = ({img,h="h-56"}) => img.src
+  ? <img src={img.src} alt="Attached image" className="w-full max-h-96 object-cover rounded-xl"/>
+  : <div className={`${h} rounded-xl flex flex-col items-center justify-center text-white`} style={{background:`linear-gradient(135deg,${img.g[0]},${img.g[1]})`}}>
+      <div className="text-5xl">{img.e}</div>
+      <div className="text-xs font-semibold mt-2 opacity-90">{img.t}</div>
+    </div>;
+
+const Logo = () => (
+  <div className="flex items-center gap-2.5">
+    <img src={LOGO} alt="VESIT logo" className="h-10 w-auto rounded-md bg-white p-0.5 border bdr"/>
+    <div className="leading-tight hidden sm:block"><div className="font-extrabold text-[17px]">CampusConnect</div><div className="text-[11px] t2 font-medium">VESIT · B.Tech</div></div>
+  </div>);
+
+/* ============ TOP BAR ============ */
+function TopBar({user,dark,setDark,q,setQ,setTag,setPage,onLogout}) {
+  const [bell,setBell] = useState(false);
+  const [menu,setMenu] = useState(false);
+  const [seen,setSeen] = useState(false);
+  const fresh = HACKATHONS.filter(h=>h.isNew);
+  return (
+    <header className="sticky top-0 z-40 border-b bdr" style={{background:"var(--card)"}}>
+      <div className="max-w-[1280px] mx-auto px-4 h-16 flex items-center gap-4">
+        <button onClick={()=>setPage("home")}><Logo/></button>
+        <div className="flex-1 max-w-xl mx-auto relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 t2 text-sm">🔍</span>
+          <input value={q} onChange={e=>{setQ(e.target.value);setTag("All");setPage("forum")}} placeholder="Search questions" aria-label="Search questions" className="inp w-full rounded-full pl-11 pr-4 py-2.5 text-sm"/>
+        </div>
+        <div className="flex items-center gap-2 relative">
+          <Tip below label={dark?"Light mode":"Dark mode"}>
+            <button onClick={()=>setDark(!dark)} aria-label={dark?"Switch to light mode":"Switch to dark mode"} className="w-10 h-10 rounded-full hv text-lg">{dark?"☀️":"🌙"}</button>
+          </Tip>
+          <Tip below label="Hackathon alerts">
+            <button onClick={()=>{setBell(!bell);setMenu(false);setSeen(true)}} aria-label="Hackathon alerts" className="relative w-10 h-10 rounded-full hv text-lg">🔔
+              {!seen && <span className="absolute top-0 right-0 w-4 h-4 rounded-full ac text-[10px] font-bold flex items-center justify-center">{fresh.length}</span>}
+            </button>
+          </Tip>
+          <button onClick={()=>{setMenu(!menu);setBell(false)}} aria-label="Account menu" className="w-10 h-10 rounded-full ac text-lg">🎓</button>
+          {(bell||menu) && <div className="fixed inset-0 z-30" onClick={()=>{setBell(false);setMenu(false)}}/>}
+          {bell && (
+            <div className="card absolute right-0 top-14 z-40 w-80 max-w-[85vw] p-5 shadow-xl">
+              <div className="font-bold">New hackathons at VESIT</div>
+              <div className="mt-4 space-y-4">{fresh.map(h=>(
+                <div key={h.id} className="flex gap-3 items-center">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0" style={{background:`linear-gradient(135deg,${h.g[0]},${h.g[1]})`}}>{h.e}</div>
+                  <div className="text-sm"><div className="font-semibold">{h.name}</div><div className="t2 text-xs">{h.date} · {h.venue}</div></div>
+                </div>))}</div>
+              <button onClick={()=>{setBell(false);setPage("hackathons")}} className="acx text-sm font-semibold mt-5">View all hackathons →</button>
+            </div>)}
+          {menu && (
+            <div className="card absolute right-0 top-14 z-40 w-64 max-w-[85vw] p-5 shadow-xl">
+              <div className="text-xs t2">Signed in as</div>
+              <div className="text-sm font-semibold break-all">{user}</div>
+              <button onClick={onLogout} className="mt-4 w-full bdr rounded-xl py-2 text-sm font-semibold hv">Log out</button>
+            </div>)}
+        </div>
+      </div>
+    </header>);
+}
+
+/* ============ LEFT NAV ============ */
+const NAV = [["home","Home","🏠"],["forum","Q&A Forum","💬"],["hackathons","Hackathons","🏆"],["market","Resources","📚"],["profile","Profile","👤"]];
+function Sidebar({page,setPage,tag,setTag}) {
+  return (<>
+    {/* Desktop */}
+    <aside className="hidden lg:block sticky top-24 self-start space-y-8">
+      <nav className="space-y-1">{NAV.map(([k,l,i])=>(
+        <button key={k} onClick={()=>setPage(k)} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 ${page===k?"bgh":"hv t2"}`}>
+          <span>{i}</span>{l}</button>))}</nav>
+      <div>
+        <div className="px-4 text-[11px] font-bold t2 tracking-wider mb-2">COMMUNITIES</div>
+        {Object.keys(TAGS).map(t=>(
+          <button key={t} onClick={()=>{setTag(t);setPage("forum")}} className={`w-full text-left px-4 py-2 rounded-xl text-sm flex items-center gap-3 hv ${tag===t?"font-bold":"t2"}`}>
+            <span className="w-2.5 h-2.5 rounded-full" style={{background:TAGS[t]}}/>c/{t}</button>))}
+      </div>
+    </aside>
+    {/* Mobile */}
+    <nav className="lg:hidden flex gap-2 overflow-x-auto pb-1">{NAV.map(([k,l,i])=>(
+      <button key={k} onClick={()=>setPage(k)} className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold ${page===k?"ac":"bdr"}`}>{i} {l}</button>))}</nav>
+  </>);
+}
+
+/* ============ POSTS ============ */
+function Post({p}) {
+  const [vote,setVote] = useState(0);
+  const [saved,setSaved] = useState(false);
+  const [copied,setCopied] = useState(false);
+  const seed = SEED[p.id]||[];
+  const [list,setList] = useState(seed);       // comments (seniors reply here)
+  const [open,setOpen] = useState(false);
+  const [txt,setTxt] = useState("");
+  const addComment = () => { if(!txt.trim()) return; setList([...list,{who:"Anonymous student",text:txt.trim(),time:"just now"}]); setTxt(""); setOpen(true); };
+  const [ai,setAi] = useState(null);   // null | {loading} | {text,demo} | {error}
+  const ask = async () => {
+    if(ai&&ai.loading) return;                          // ignore clicks while an answer is loading
+    if(ai) return setAi(null);                          // second click hides it
+    setAi({loading:true});
+    try{
+      const t = await askGemini(p.title,p.body);
+      setAi(t ? {text:t} : {text:p.summary.map(([k,v])=>k+": "+v).join("\n"),demo:true});
+    }catch(e){ setAi({error:true}); }
+  };
+  useEffect(()=>{ if(p.autoAI) ask(); },[]);           // new questions get a Gemini answer straight away
+  const share = () => { try{ navigator.clipboard && navigator.clipboard.writeText(location.href); }catch(e){} setCopied(true); setTimeout(()=>setCopied(false),1500); };
+  return (
+    <article className="card p-7">
+      <div className="flex items-center gap-2 text-xs t2">
+        <span className="font-bold" style={{color:TAGS[p.tag]}}>c/{p.tag}</span>
+        <span>· {p.time}</span>
+      </div>
+      <h3 className="text-lg font-bold mt-3 leading-snug">{p.title}</h3>
+      {p.body && <p className="text-sm t2 mt-3 leading-relaxed">{p.body}</p>}
+      {p.img && <div className="mt-5"><ImgSpace img={p.img}/></div>}
+      {ai && (
+        <div className="mt-6 rounded-xl bgh p-5">
+          <div className="text-sm font-bold acx">✨ Gemini</div>
+          {ai.loading && <p className="text-sm t2 mt-2">Thinking...</p>}
+          {ai.error && <p className="text-sm text-red-500 mt-2">Couldn't reach Gemini. Check your API key and try again.</p>}
+          {ai.text && <p className="text-sm mt-2 leading-relaxed whitespace-pre-line">{ai.text}</p>}
+          {ai.text && <p className="text-xs t2 mt-3">{ai.demo?"Demo answer. Add your Gemini API key in the file for live answers.":"AI-generated. Double-check with seniors."}</p>}
+        </div>)}
+      <div className="flex items-center gap-4 mt-6 text-sm flex-wrap">
+        <div className="flex items-center rounded-full bgh">
+          <button onClick={()=>setVote(vote===1?0:1)} aria-label="Upvote" className={`px-3 py-1.5 rounded-full ${vote===1?"acx font-bold":"t2"}`}>▲</button>
+          <span className="font-bold text-xs min-w-[1.5rem] text-center">{p.votes+vote}</span>
+          <button onClick={()=>setVote(vote===-1?0:-1)} aria-label="Downvote" className={`px-3 py-1.5 rounded-full ${vote===-1?"text-blue-500 font-bold":"t2"}`}>▼</button>
+        </div>
+        <button onClick={()=>setOpen(!open)} aria-expanded={open} className="px-3 py-1.5 rounded-full hv t2 text-xs font-semibold">💬 {list.length} {open?"· Hide":"· Reply"}</button>
+        <button onClick={ask} className="px-4 py-1.5 rounded-full bgh font-semibold text-xs">{ai&&!ai.loading?"Hide Gemini":"✨ Ask Gemini"}</button>
+        <div className="flex items-center gap-1 ml-auto">
+          <Tip label={saved?"Saved":"Save"}><button onClick={()=>setSaved(!saved)} aria-label="Save post" className={`w-9 h-9 rounded-full hv text-lg ${saved?"":"opacity-70"}`}>{saved?"📌":"📍"}</button></Tip>
+          <Tip label={copied?"Link copied":"Share"}><button onClick={share} aria-label="Copy link" className="w-9 h-9 rounded-full hv text-lg opacity-70 hover:opacity-100">📤</button></Tip>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-6 pt-6 border-t bdr">
+          <div className="space-y-5">
+            {list.length===0 && <p className="text-sm t2">No replies yet. Be the first to help.</p>}
+            {list.map((c,i)=>(
+              <div key={i} className="flex gap-3">
+                <span className="w-8 h-8 rounded-full bgh flex items-center justify-center shrink-0 text-sm">{c.senior?"🛡️":"👤"}</span>
+                <div className="flex-1">
+                  <div className="text-xs t2"><span className="font-bold" style={{color:"var(--tx)"}}>{c.who}</span>{c.senior && <span className="ml-2 ac rounded-full px-2 py-0.5 text-[10px] font-bold">Senior</span>} · {c.time}</div>
+                  <p className="text-sm mt-1 leading-relaxed">{c.text}</p>
+                </div>
+              </div>))}
+          </div>
+          <div className="flex items-center gap-3 mt-6">
+            <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addComment()} placeholder="Write a reply..." maxLength={500} aria-label="Write a reply" className="inp flex-1 rounded-full px-5 py-2.5 text-sm"/>
+            <button onClick={addComment} className="ac rounded-full px-5 py-2.5 text-sm font-bold">Reply</button>
+          </div>
+        </div>)}
+    </article>);
+}
+
+function Composer({onPost,tag}) {
+  const [draft,setDraft] = useState("");
+  const [cat,setCat] = useState(tag==="All"?"DSA":tag);
+  const [img,setImg] = useState(null);
+  const pick = e => { const f=e.target.files[0]; if(f) setImg({src:URL.createObjectURL(f)}); e.target.value=""; };   // reset so the same file can be picked again
+  const post = () => { if(!draft.trim()) return; onPost(draft.trim(),img,cat); setDraft(""); setImg(null); };
+  return (
+    <div className="card p-6">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="w-10 h-10 rounded-full bgh flex items-center justify-center shrink-0">👤</span>
+        <input value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder="Ask your seniors anonymously..." maxLength={200} aria-label="Your question" className="inp flex-1 min-w-[10rem] rounded-full px-5 py-3 text-sm"/>
+        <label className="cursor-pointer w-10 h-10 rounded-full hv flex items-center justify-center text-lg" title="Add image">🖼️<input type="file" accept="image/*" onChange={pick} className="hidden"/></label>
+        <select value={cat} onChange={e=>setCat(e.target.value)} aria-label="Community" className="inp rounded-full px-3 py-2.5 text-xs font-semibold">{Object.keys(TAGS).map(t=><option key={t} value={t}>c/{t}</option>)}</select>
+        <button onClick={post} className="ac rounded-full px-6 py-2.5 text-sm font-bold">Post</button>
+      </div>
+      {img && <div className="mt-4 relative"><ImgSpace img={img}/><button onClick={()=>setImg(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white text-sm">✕</button></div>}
+    </div>);
+}
+
+function Feed({q,setQ,tag,setTag}) {
+  const [posts,setPosts] = useState(POSTS);
+  const [sort,setSort] = useState("Hot");
+  const rank = p => p.votes + p.comments*2;
+  const shown = posts
+    .filter(p=>(tag==="All"||p.tag===tag)&&(p.title+p.body).toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=> sort==="New"?a.age-b.age : sort==="Top"?b.votes-a.votes : rank(b)-rank(a));
+  const add = (title,img,cat) => {
+    setPosts([{id:Date.now(),age:0,time:"just now",tag:cat,votes:1,comments:0,autoAI:true,title,body:"",img,summary:[["Demo","No Gemini key is set, so this is a placeholder. Add your key in the file for a real AI answer."]]},...posts]);
+    setTag(cat); setQ(""); setSort("New");        // make sure the new post is visible at the top
+  };
+  return (
+    <div className="space-y-8">
+      <Composer onPost={add} tag={tag}/>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-1">{["Hot","New","Top"].map(s=>(
+          <button key={s} onClick={()=>setSort(s)} className={`px-4 py-2 rounded-full text-sm font-semibold ${sort===s?"bgh":"t2 hv"}`}>{s}</button>))}</div>
+        <div className="flex gap-2 flex-wrap">{["All",...Object.keys(TAGS)].map(t=>(
+          <button key={t} onClick={()=>setTag(t)} className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${tag===t?"ac":"bdr t2"}`}>{t}</button>))}</div>
+      </div>
+      {shown.length===0 && <div className="card p-10 text-center t2 text-sm">No posts match. Try another word or ask it yourself above.</div>}
+      {shown.map(p=><Post key={p.id} p={p}/>)}
+    </div>);
+}
+
+/* ============ HACKATHONS ============ */
+function HackCard({h}) {
+  const [on,setOn] = useState(false);
+  return (
+    <div className="card overflow-hidden flex flex-col">
+      <div className="h-32 flex items-center justify-center text-5xl relative" style={{background:`linear-gradient(135deg,${h.g[0]},${h.g[1]})`}}>
+        {h.e}{h.isNew && <span className="absolute top-3 left-3 ac text-[10px] font-bold rounded-full px-2.5 py-1">NEW</span>}
+      </div>
+      <div className="p-6 flex-1 flex flex-col">
+        <div className="text-xs font-bold acx">{h.date} · {h.time}</div>
+        <div className="font-bold text-lg mt-1">{h.name}</div>
+        <div className="text-xs t2">by {h.host}</div>
+        <div className="text-sm t2 mt-4 space-y-1.5 flex-1"><div>📍 {h.venue}</div><div>👥 {h.team}</div><div>🎁 {h.prize}</div></div>
+        <div className="text-xs t2 mt-4">{h.note}</div>
+        <button onClick={()=>setOn(!on)} className={`mt-3 rounded-full py-2.5 text-sm font-bold ${on?"bdr":"ac"}`}>{on?"✅ Reminder on":"🔔 Remind me"}</button>
+      </div>
+    </div>);
+}
+const Hackathons = () => (
+  <div>
+    <h1 className="text-2xl font-extrabold">Hackathons at VESIT</h1>
+    <p className="t2 text-sm mt-1">Upcoming events happening on our campus.</p>
+    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8 mt-8">{HACKATHONS.map(h=><HackCard key={h.id} h={h}/>)}</div>
+  </div>);
+
+/* ============ RESOURCES ============ */
+function Market() {
+  const [req,setReq] = useState({});
+  const [type,setType] = useState("All");
+  const [bf,setBf] = useState("All");
+  const list = RESOURCES.filter(r=>(type==="All"||r.type===type)&&(bf==="All"||r.branch===bf||r.branch==="All Branches"));
+  return (
+    <div>
+      <h1 className="text-2xl font-extrabold">Resource Exchange</h1>
+      <p className="t2 text-sm mt-1">Books, notes and calculators passed between students.</p>
+      <div className="flex gap-3 mt-6 flex-wrap items-center">
+        <select value={bf} onChange={e=>setBf(e.target.value)} className="inp rounded-full px-4 py-2 text-sm font-semibold">
+          <option value="All">All branches</option>
+          {BRANCHES.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        {["All","For Lending","For Donation","For Sale"].map(t=>(
+          <button key={t} onClick={()=>setType(t)} className={`px-4 py-2 rounded-full text-sm font-semibold ${type===t?"ac":"bdr t2"}`}>{t}</button>))}
+      </div>
+      {list.length===0 && <div className="card p-10 text-center t2 text-sm mt-8">Nothing here yet for this filter.</div>}
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8 mt-8">{list.map(r=>(
+        <div key={r.id} className="card overflow-hidden flex flex-col">
+          <div className="h-36 flex items-center justify-center text-5xl relative" style={{background:`linear-gradient(135deg,${r.g[0]},${r.g[1]})`}}>
+            {r.e}<span className="absolute top-3 left-3 text-[10px] font-bold text-white rounded-full px-2.5 py-1" style={{background:TYPE_COLOR[r.type]}}>{r.type}</span>
+          </div>
+          <div className="p-6 flex-1 flex flex-col">
+            <div className="font-bold">{r.name}</div>
+            <div className="text-sm t2 mt-1 flex-1">{r.desc}</div>
+            <div className="text-xs t2 mt-3">🎓 {r.year} · {bShort(r.branch)}</div>
+            <div className="flex items-center justify-between mt-4">
+              <span className="font-bold text-emerald-500">{r.price||""}</span>
+              <button onClick={()=>setReq({...req,[r.id]:!req[r.id]})} className={`rounded-full px-4 py-1.5 text-xs font-bold ${req[r.id]?"bdr":"ac"}`}>{req[r.id]?"Requested":"Request"}</button>
+            </div>
+          </div>
+        </div>))}</div>
+    </div>);
+}
+
+/* ============ PROFILE ============ */
+const Profile = ({user,branch,setBranch}) => (
+  <div className="card overflow-hidden">
+    <div className="h-36" style={{background:"linear-gradient(135deg,#2563EB,#7C3AED)"}}/>
+    <div className="px-8 pb-8">
+      <div className="flex items-end justify-between flex-wrap gap-4 -mt-10">
+        <div className="w-24 h-24 rounded-full flex items-center justify-center text-4xl border-4" style={{background:"var(--hv)",borderColor:"var(--card)"}}>👤</div>
+        <div className="rounded-full bgh px-4 py-2 text-sm font-bold">🛡️ Verified VESIT student</div>
+      </div>
+      <div className="text-xl font-extrabold mt-5">{niceName(user)}</div>
+      <div className="text-xs t2 mt-1 break-all">{user}</div>
+      <div className="font-bold mt-3">B.Tech · {BR[branch].name}</div>
+      <div className="text-sm t2 mt-1">Vivekanand Education Society's Institute of Technology (VESIT)</div>
+      <div className="text-sm t2 mt-1">📍 Chembur, Mumbai</div>
+      <div className="mt-8">
+        <label className="text-xs font-semibold t2">Your branch</label>
+        <select value={branch} onChange={e=>setBranch(e.target.value)} className="inp block w-full max-w-md mt-2 rounded-xl px-4 py-3 text-sm">
+          {BRANCHES.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <p className="text-sm t2 mt-3">{BR[branch].blurb}</p>
+      </div>
+      <div className="text-sm font-bold mt-10">Technical skills</div>
+      <div className="flex flex-wrap gap-2 mt-3">{SKILLS.map(s=><span key={s} className="text-xs bdr rounded-full px-3.5 py-1.5">{s}</span>)}</div>
+    </div>
+  </div>);
+
+/* ============ RIGHT COLUMN ============ */
+function RightRail({setPage}) {
+  return (
+    <aside className="hidden xl:block space-y-6 sticky top-24 self-start">
+      <div className="card overflow-hidden">
+        <div className="h-20" style={{background:"linear-gradient(135deg,#0B1F44,#1D4E89)"}}/>
+        <div className="p-5">
+          <div className="font-bold">VESIT B.Tech Community</div>
+          <p className="text-sm t2 mt-2 leading-relaxed">Ask seniors, share notes and find teammates. Only @{COLLEGE_DOMAIN} students can join.</p>
+          <div className="flex flex-wrap gap-1.5 mt-4">{BRANCHES.map(b=><span key={b.id} title={b.name} className="text-[11px] font-semibold bgh rounded-full px-2.5 py-1">{b.short}</span>)}</div>
+        </div>
+      </div>
+      <div className="card p-5">
+        <div className="flex items-center justify-between"><div className="font-bold">🏆 Upcoming hackathons</div><button onClick={()=>setPage("hackathons")} className="acx text-xs font-semibold">See all</button></div>
+        <div className="mt-4 space-y-4">{HACKATHONS.slice(0,2).map(h=>(
+          <div key={h.id} className="flex gap-3 items-center">
+            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0" style={{background:`linear-gradient(135deg,${h.g[0]},${h.g[1]})`}}>{h.e}</div>
+            <div className="text-sm"><div className="font-semibold leading-tight">{h.name}</div><div className="text-xs t2 mt-0.5">{h.date} · {h.venue}</div></div>
+          </div>))}</div>
+      </div>
+    </aside>);
+}
+
+/* ============ HOME (overview, separate from the forum) ============ */
+function Home({user,branch,setPage}) {
+  const hot = [...POSTS].sort((a,b)=>(b.votes+b.comments*2)-(a.votes+a.comments*2)).slice(0,3);
+  const name = niceName(user);
+  return (
+    <div className="space-y-14">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-extrabold">Welcome back, {name}</h1>
+          <p className="t2 mt-2">Here's what's happening at VESIT today.</p>
+        </div>
+        <button onClick={()=>setPage("forum")} className="ac rounded-full px-6 py-3 text-sm font-bold">Ask a question</button>
+      </div>
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Hackathons on campus</h2>
+          <button onClick={()=>setPage("hackathons")} className="acx text-sm font-semibold">See all →</button>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">{HACKATHONS.map(h=><HackCard key={h.id} h={h}/>)}</div>
+      </section>
+      <div className="grid lg:grid-cols-2 gap-8 items-start">
+        <section className="card p-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Trending questions</h2>
+            <button onClick={()=>setPage("forum")} className="acx text-sm font-semibold">Open forum →</button>
+          </div>
+          <div className="mt-6">{hot.map((p,i)=>(
+            <button key={p.id} onClick={()=>setPage("forum")} className={`block w-full text-left py-5 ${i>0?"border-t bdr":""}`}>
+              <div className="font-semibold leading-snug">{p.title}</div>
+              <div className="text-xs t2 mt-2"><span className="font-bold" style={{color:TAGS[p.tag]}}>c/{p.tag}</span> · ▲ {p.votes} · 💬 {p.comments}</div>
+            </button>))}</div>
+        </section>
+        <section className="card p-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Resources for {BR[branch].short}</h2>
+            <button onClick={()=>setPage("market")} className="acx text-sm font-semibold">Browse all →</button>
+          </div>
+          <div className="mt-6">{RESOURCES.filter(r=>r.branch===branch||r.branch==="All Branches").slice(0,3).map((r,i)=>(
+            <button key={r.id} onClick={()=>setPage("market")} className={`flex w-full items-center gap-4 text-left py-5 ${i>0?"border-t bdr":""}`}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0" style={{background:`linear-gradient(135deg,${r.g[0]},${r.g[1]})`}}>{r.e}</div>
+              <div className="flex-1"><div className="font-semibold leading-tight">{r.name}</div><div className="text-xs t2 mt-1">{r.type} · {r.year}</div></div>
+              <div className="text-sm font-bold text-emerald-500">{r.price||""}</div>
+            </button>))}</div>
+        </section>
+      </div>
+    </div>);
+}
+
+/* ============ LOGIN ============ */
+function Login({onLogin,dark,setDark}) {
+  const [email,setEmail] = useState("");
+  const [password,setPassword] = useState("");
+  const [branch,setBranch] = useState("COMP");
+  const [showPw,setShowPw] = useState(false);
+  const [error,setError] = useState("");
+  const [sent,setSent] = useState(false);
+  const submit = () => {
+    if(sent) return;                           // ignore double clicks
+    const e = email.trim().toLowerCase();
+    if(!EMAIL_RE.test(e))
+      return setError("Use your college email, like name@"+COLLEGE_DOMAIN+". Other emails can't join.");
+    if(password.length < 6) return setError("Enter your password (at least 6 characters).");
+    setError(""); setSent(true);               // demo only: later use supabase.auth.signInWithPassword({email,password})
+    setTimeout(()=>onLogin(e,branch), 900);
+  };
+  return (
+    <div className="min-h-screen p-4 flex items-center justify-center relative">
+      <button onClick={()=>setDark(!dark)} className="absolute top-4 right-4 w-10 h-10 rounded-full card text-lg" title="Toggle theme" aria-label="Toggle theme">{dark?"☀️":"🌙"}</button>
+      <div className="card w-full max-w-4xl grid md:grid-cols-2 overflow-hidden">
+        <div className="p-10 text-white flex flex-col justify-center" style={{background:"linear-gradient(180deg,rgba(11,31,68,.55),rgba(11,31,68,.88)), url('__CAMPUS_IMG__') center/cover no-repeat, linear-gradient(135deg,#0B1F44,#1D4E89)"}}>
+          <img src={LOGO} alt="VESIT logo" className="h-20 w-auto self-start rounded-xl bg-white p-1.5 shadow-lg"/>
+          <div className="text-2xl font-extrabold mt-5">CampusConnect</div>
+          <div className="text-sm opacity-70">VESIT · B.Tech students</div>
+          <h1 className="text-3xl font-extrabold mt-10 leading-tight">Ask the seniors.<br/>Keep the answers.</h1>
+          <p className="opacity-80 mt-3 text-sm leading-relaxed">Anonymous questions, AI thread summaries, hackathon alerts and a place to pass your books down.</p>
+        </div>
+        <div className="p-10 flex items-center">
+          <div className="w-full">
+            <h2 className="text-2xl font-extrabold">Sign in</h2>
+            <p className="text-sm t2 mt-1">Use your @{COLLEGE_DOMAIN} college email.</p>
+            <label htmlFor="em" className="block text-sm font-semibold mt-7">College email</label>
+            <input value={email} onChange={e=>{setEmail(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&submit()} id="em" autoComplete="username" placeholder={"name@"+COLLEGE_DOMAIN} className="inp w-full mt-2 rounded-xl px-4 py-3 text-sm"/>
+            <label className="block text-sm font-semibold mt-5">Your branch</label>
+            <select value={branch} onChange={e=>setBranch(e.target.value)} className="inp w-full mt-2 rounded-xl px-4 py-3 text-sm">
+              {BRANCHES.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <label htmlFor="pw" className="block text-sm font-semibold mt-5">Password</label>
+            <div className="relative">
+              <input type={showPw?"text":"password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&submit()} id="pw" placeholder="Enter your password" autoComplete="current-password" className="inp w-full mt-2 rounded-xl px-4 py-3 pr-16 text-sm"/>
+              <button type="button" onClick={()=>setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 mt-1 text-xs font-semibold t2">{showPw?"Hide":"Show"}</button>
+            </div>
+            {error && <p role="alert" className="text-sm text-red-500 mt-3">{error}</p>}
+            <button onClick={submit} className="ac w-full mt-6 rounded-full py-3 text-sm font-bold">{sent?"Signing you in...":"Continue"}</button>
+            <button onClick={()=>onLogin("demo@"+COLLEGE_DOMAIN,branch)} className="bdr hv w-full mt-3 rounded-full py-3 text-sm font-semibold">Use demo account</button>
+          </div>
+        </div>
+      </div>
+    </div>);
+}
+
+/* ============ APP ============ */
+function App() {
+  const [dark,setDark] = useTheme();
+  const [user,setUser] = useState(()=>{ try{ const u=localStorage.getItem("cc-user"); return u&&EMAIL_RE.test(u)?u:null; }catch(e){ return null; } });   // stays signed in after refresh (demo only)
+  const [page,setPage] = useState("home");
+  const [tag,setTag] = useState("All");
+  const [q,setQ] = useState("");
+  const [branch,setBranch] = useState(()=>{ try{ const b=localStorage.getItem("cc-branch"); if(b&&BR[b]) return b; }catch(e){} return "COMP"; });
+  useEffect(()=>{ try{ if(user) localStorage.setItem("cc-user",user); else localStorage.removeItem("cc-user"); localStorage.setItem("cc-branch",branch); }catch(e){} },[user,branch]);
+  useEffect(()=>{ window.scrollTo(0,0); },[page]);   // new page starts at the top
+  if(!user) return <Login onLogin={(e,b)=>{setUser(e);setBranch(b)}} dark={dark} setDark={setDark}/>;
+  const withRail = page==="forum";
+  return (
+    <div>
+      <TopBar user={user} dark={dark} setDark={setDark} q={q} setQ={setQ} setTag={setTag} setPage={setPage} onLogout={()=>{setUser(null);setPage("home");setQ("");setTag("All")}}/>
+      <div className={`max-w-[1280px] mx-auto px-4 py-10 grid gap-12 lg:grid-cols-[210px_minmax(0,1fr)] ${withRail?"xl:grid-cols-[210px_minmax(0,1fr)_320px]":""}`}>
+        <Sidebar page={page} setPage={setPage} tag={tag} setTag={setTag}/>
+        <main>
+          {page==="home" && <Home user={user} branch={branch} setPage={setPage}/>}
+          {withRail && <Feed q={q} setQ={setQ} tag={tag} setTag={setTag}/>}
+          {page==="hackathons" && <Hackathons/>}
+          {page==="market" && <Market/>}
+          {page==="profile" && <Profile user={user} branch={branch} setBranch={setBranch}/>}
+        </main>
+        {withRail && <RightRail setPage={setPage}/>}
+      </div>
+    </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
